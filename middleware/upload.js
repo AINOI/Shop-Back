@@ -25,15 +25,15 @@ const upload = multer({
 export default async (req, res, next) => {
   upload.single('image')(req, res, async error => {
     if (error instanceof multer.MulterError) {
-      let message = '上傳錯誤'
+      let message = '上傳失敗'
       if (error.code === 'LIMIT_FILE_SIZE') {
-        message = '檔案太大'
+        message = '檔案需限制在 1MB 內。'
       } else if (error.code === 'LIMIT_FORMAT') {
-        message = '上傳錯誤'
+        message = '上傳失敗'
       }
-      res.stauts(400).send({ success: false, message })
+      res.status(400).send({ success: false, message })
     } else if (error) {
-      res.stauts(500).send({ success: false, message: '伺服器錯誤' })
+      res.status(500).send({ success: false, message: '伺服器錯誤' })
     } else {
       next()
     }

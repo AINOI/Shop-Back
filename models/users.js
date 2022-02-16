@@ -5,28 +5,34 @@ import validator from 'validator'
 const userSchema = new mongoose.Schema({
   account: {
     type: String,
-    minlength: [4, '帳號必須 4 個字以上'],
-    maxlength: [20, '帳號必須 20 個字以下'],
+    minlength: [6, '帳號長度需 6 字元以上。'],
+    maxlength: [20, '帳號長度需 20 字元以下。'],
     unique: true,
-    required: [true, '帳號不能為空']
+    required: [true, '帳號欄位不得空白。']
   },
   password: {
     type: String,
-    required: [true, '密碼不能為空']
+    required: [true, '密碼欄位不得空白。']
   },
   email: {
     type: String,
-    required: [true, '信箱不能為空'],
+    required: [true, 'E-mail欄位不得空白'],
     unique: true,
     validate: {
       validator (email) {
         return validator.isEmail(email)
       },
-      message: '信箱格式不正確'
+      message: '信箱格式不正確。'
     }
   },
+  nickname: {
+    type: String
+  },
+  avatarimg: {
+    type: String
+  },
   role: {
-    // 0 = 一般會員
+    // 0 = 用戶/創作者
     // 1 = 管理員
     type: Number,
     default: 0
@@ -34,31 +40,43 @@ const userSchema = new mongoose.Schema({
   tokens: {
     type: [String]
   },
-  cart: {
+  novelsbase: {
     type: [
       {
-        product: {
+        novel: {
           type: mongoose.ObjectId,
-          ref: 'products',
-          required: [true, '缺少商品 ID']
-        },
-        quantity: {
-          type: Number,
-          required: [true, '缺少商品數量']
+          ref: 'novels',
+          required: [true, '缺少作品 ID']
         }
       }
     ]
+  },
+  emailswitch: {
+    type: String
+  },
+  sex: {
+    type: String,
+    enum: {
+      values: ['男性', '女性', '不公開', ''],
+      message: '選擇公開與否'
+    }
+  },
+  birthdayMon: {
+    type: String
+  },
+  birthdayDate: {
+    type: String
   }
 }, { versionKey: false })
 
 userSchema.pre('save', function (next) {
   const user = this
   if (user.isModified('password')) {
-    if (user.password.length >= 4 && user.password.length <= 20) {
+    if (user.password.length >= 6 && user.password.length <= 20) {
       user.password = md5(user.password)
     } else {
       const error = new mongoose.Error.ValidationError(null)
-      error.addError('password', new mongoose.Error.ValidatorError({ message: '密碼長度錯誤' }))
+      error.addError('password', new mongoose.Error.ValidatorError({ message: '密碼長度需在 6 至 20 字元內。' }))
       next(error)
       return
     }
@@ -69,11 +87,11 @@ userSchema.pre('save', function (next) {
 userSchema.pre('findOneAndUpdate', function (next) {
   const user = this._update
   if (user.password) {
-    if (user.password.length >= 4 && user.password.length <= 20) {
+    if (user.password.length >= 6 && user.password.length <= 20) {
       user.password = md5(user.password)
     } else {
       const error = new mongoose.Error.ValidationError(null)
-      error.addError('password', new mongoose.Error.ValidatorError({ message: '密碼長度錯誤' }))
+      error.addError('password', new mongoose.Error.ValidatorError({ message: '密碼長度需在 6 至 20 字元內。' }))
       next(error)
       return
     }

@@ -1,40 +1,41 @@
-import products from '../models/products.js'
+import novels from '../models/novels.js'
 
 export const create = async (req, res) => {
   try {
-    const result = await products.create({ ...req.body, image: req.file.path })
+    const result = await novels.create({ ...req.body, image: req.file.path })
     res.status(200).send({ success: true, message: '', result })
   } catch (error) {
     if (error.name === 'ValidationError') {
       const key = Object.keys(error.errors)[0]
       res.status(400).send({ success: false, message: error.errors[key].message })
     } else {
+      console.log(error)
       res.status(500).send({ success: false, message: '伺服器錯誤' })
     }
   }
 }
 
-export const getProducts = async (req, res) => {
+export const getNovels = async (req, res) => {
   try {
-    const result = await products.find({ sell: true })
+    const result = await novels.find({ publish: true })
     res.status(200).send({ success: true, message: '', result })
   } catch (error) {
     res.status(500).send({ success: false, message: '伺服器錯誤' })
   }
 }
 
-export const getAllProducts = async (req, res) => {
+export const getAllNovels = async (req, res) => {
   try {
-    const result = await products.find()
+    const result = await novels.find()
     res.status(200).send({ success: true, message: '', result })
   } catch (error) {
     res.status(500).send({ success: false, message: '伺服器錯誤' })
   }
 }
 
-export const getProductById = async (req, res) => {
+export const getNovelsById = async (req, res) => {
   try {
-    const result = await products.findById(req.params.id)
+    const result = await novels.findById(req.params.id)
     if (result) {
       res.status(200).send({ success: true, message: '', result })
     } else {
@@ -49,20 +50,19 @@ export const getProductById = async (req, res) => {
   }
 }
 
-export const updateProductById = async (req, res) => {
+export const updataNovelsById = async (req, res) => {
   const data = {
-    name: req.body.name,
-    price: req.body.price,
-    description: req.body.description,
-    sell: req.body.sell,
-    categoey: req.body.categoey
+    title: req.body.title,
+    summary: req.body.summary,
+    novelType: req.body.novelType,
+    text: req.body.text
   }
 
   if (req.file) {
     data.image = req.file.path
   }
   try {
-    const result = await products.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true })
+    const result = await novels.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true })
     res.status(200).send({ success: true, message: '', result })
   } catch (error) {
     if (error.name === 'CastError') {

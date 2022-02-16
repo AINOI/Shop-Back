@@ -1,7 +1,6 @@
 import md5 from 'md5'
-import jwt from 'jsonwebtoken'
 import users from '../models/users.js'
-import products from '../models/products.js'
+import jwt from 'jsonwebtoken'
 
 export const register = async (req, res) => {
   try {
@@ -21,10 +20,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const user = await users.findOne(
-      { account: req.body.account, password: md5(req.body.password) },
-      '-password'
-    )
+    const user = await users.findOne({ account: req.body.account, password: md5(req.body.password) }, '-password')
     if (user) {
       const token = jwt.sign({ _id: user._id.toString() }, process.env.SECRET, { expiresIn: '7 days' })
       user.tokens.push(token)
@@ -32,10 +28,9 @@ export const login = async (req, res) => {
       const result = user.toObject()
       delete result.tokens
       result.token = token
-      result.cart = result.cart.length
       res.status(200).send({ success: true, message: '', result })
     } else {
-      res.status(404).send({ success: false, message: '帳號或密碼錯誤' })
+      res.status(404).send({ success: false, message: '帳號或密碼有誤' })
     }
   } catch (error) {
     console.log(error)
@@ -66,86 +61,34 @@ export const extend = async (req, res) => {
   }
 }
 
-export const getUserInfo = (req, res) => {
+export const getUserInfo = async (req, res) => {
   try {
     const result = req.user.toObject()
     delete result.tokens
-    result.cart = result.cart.length
     res.status(200).send({ success: true, message: '', result })
   } catch (error) {
     res.status(500).send({ success: false, message: '伺服器錯誤' })
   }
 }
 
-export const addCart = async (req, res) => {
+export const updataInfo = async (req, res) => {
   try {
-    const idx = req.user.cart.findIndex(item => item.product.toString() === req.body.product)
-    if (idx > -1) {
-      req.user.cart[idx].quantity += req.body.quantity
+    const user = await users.findByIdAndUpdate({ _id: req.user._id }, { ...req.body, image: req.file.path }, { new: true, runValidators: true })
+    if (user) {
+      res.status(200).send({ success: false, message: '', user })
     } else {
-      const result = await products.findById(req.body.product)
-      if (!result || !result.sell) {
-        res.status(404).send({ success: false, message: '商品不存在' })
-        return
-      }
-      req.user.cart.push(req.body)
+      res.status(404).send({ success: false, message: '找不到使用者' })
     }
-    await req.user.save()
-    res.status(200).send({ success: true, message: '', result: req.user.cart.length })
   } catch (error) {
+    console.log(error)
     if (error.name === 'CastError') {
       res.status(404).send({ success: false, message: '找不到' })
     } else if (error.name === 'ValidationError') {
       const key = Object.keys(error.errors)[0]
-      res.status(400).send({ success: false, message: error.errors[key].message })
+      res.status(400).send({ sucess: false, message: error.errors[key].name })
     } else {
-      res.status(500).send({ success: false, message: '伺服器錯誤' })
+      console.log(error)
+      res.status(500).send({ sucess: false, message: '伺服器錯誤' })
     }
-  }
-}
-
-export const getCart = async (req, res) => {
-  try {
-    const { cart } = await users.findById(req.user._id, 'cart').populate('cart.product')
-    res.status(200).send({ success: true, message: '', result: cart })
-  } catch (error) {
-    res.status(500).send({ success: false, message: '伺服器錯誤' })
-  }
-}
-
-export const updateCart = async (req, res) => {
-  try {
-    if (req.body.quantity === 0) {
-      // await users.findByIdAndUpdate(req.user._id,
-      //   {
-      //     $pull: {
-      //       cart: { product: req.body.product }
-      //     }
-      //   }
-      // )
-      const idx = req.user.cart.findIndex(item => item.product.toString() === req.body.product)
-      if (idx > -1) {
-        req.user.cart.splice(idx, 1)
-      }
-      await req.user.save()
-      res.status(200).send({ success: true, message: '' })
-    } else {
-      // await users.findOneAndUpdate(
-      //   { _id: req.user._id, 'cart.product': req.body.product },
-      //   {
-      //     $set: {
-      //       'cart.$.quantity': req.body.quantity
-      //     }
-      //   }
-      // )
-      const idx = req.user.cart.findIndex(item => item.product.toString() === req.body.product)
-      if (idx > -1) {
-        req.user.cart[idx].quantity = req.body.quantity
-      }
-      await req.user.save()
-      res.status(200).send({ success: true, message: '' })
-    }
-  } catch (error) {
-    res.status(500).send({ success: false, message: '伺服器錯誤' })
   }
 }
